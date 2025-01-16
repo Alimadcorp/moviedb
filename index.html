@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alimad Movie Search Engine</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #121212;
+        color: #fff;
+        margin: 0;
+        padding: 20px;
+      }
+
+      #search-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      input {
+        width: 60%;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #222;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      select {
+        width: 20%;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #222;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      button {
+        width: 15%;
+        padding: 10px;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .movie {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #222;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 10px;
+        width: 150px;
+        overflow: hidden;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease;
+        position: relative;
+        cursor: pointer;
+        perspective: 1000px;
+      }
+
+      .movie:hover {
+        transform: scale(1.05);
+      }
+
+      .movie img {
+        width: 100px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+      }
+
+      .movie h3 {
+        font-size: 16px;
+        margin: 10px 0 5px;
+        color: #007BFF;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+
+      .movie h3:hover {
+        color: #0056b3;
+      }
+
+      .movie p {
+        margin: 0;
+        font-size: 14px;
+        color: #aaa;
+      }
+
+      .rating-slider-container {
+        width: 100%;
+        text-align: center;
+        position: relative;
+        margin-top: 10px;
+      }
+
+      .rating-slider {
+        width: 100%;
+        height: 4px;
+        background-color: #444;
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .rating-fill {
+        height: 100%;
+        background-color: #28a745;
+        width: 0%;
+        transition: width 1s ease;
+      }
+
+      .rating-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1px;
+        font-size: 12px;
+        color: #aaa;
+      }
+      .rating-title {
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        margin-top: 5px;
+        font-size: 12px;
+        color: #aaa;
+      }
+
+      #loading {
+        display: none;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #loading img {
+        width: 50px;
+        height: 50px;
+      }
+
+      .movie-details {
+        background-color: #000a;
+        backdrop-filter:blur(10px);
+        padding: 10px;
+        z-index: 9999;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #fff;
+        text-align: left;
+        opacity: 0;
+        transform: rotateY(90deg);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      .rn{
+        font-size: 10px;
+      }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #fff3; 
+}
+::-webkit-scrollbar-thumb {
+  background: #8888;
+  border-radius:3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5558; 
+}
+      .movie.open .movie-details {
+        opacity: 1;
+        transform: rotateY(0);
+        transform: scaleX(-1);
+      }
+
+      .movie.open {
+        transform: rotateY(180deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="search-container">
+      <input type="text" id="search" placeholder="Search for movies..." />
+      <select id="type">
+        <option value="">All</option>
+        <option value="movie">Movie</option>
+        <option value="series">Series</option>
+        <option value="episode">Episode</option>
+        <option value="game">Game</option>
+      </select>
+      <button id="searchBtn">Search</button>
+    </div>
+    <div id="loading">
+      <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+    </div>
+    <div id="list"></div>
+
+    <script>
+      document.getElementById('searchBtn').addEventListener('click', searchMovies);
+      document.getElementById('search').addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') searchMovies();
+      });
+
+      async function searchMovies() {
+        const query = document.getElementById('search').value.trim();
+        const type = document.getElementById('type').value;
+        if (query.length < 1) return alert("Please enter at least 1 character.");
+
+        const loadingIndicator = document.getElementById('loading');
+        loadingIndicator.style.display = "block";
+
+        fetch(`https://www.omdbapi.com/?s=${query}&type=${type}&apikey=49d73553`)
+          .then((res) => res.json())
+          .then((data) => {
+            loadingIndicator.style.display = "none";
+
+            if (data.Response === "True") {
+              displayMovies(data.Search);
+            } else {
+              document.getElementById('list').innerHTML = `<p>No results found for "${query}"</p>`;
+            }
+          })
+          .catch((error) => {
+            loadingIndicator.style.display = "none";
+            console.error("Error fetching data:", error);
+          });
+      }
+
+      async function fetchMovieDetails(imdbID) {
+        const response = await fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=49d73553`);
+        const movieDetails = await response.json();
+        return movieDetails;
+      }
+
+      async function displayMovies(movies) {
+        const list = document.getElementById('list');
+        list.innerHTML = "";
+
+        movies.forEach(async (movie) => {
+          const movieDiv = document.createElement('div');
+          movieDiv.classList.add('movie');
+
+          movieDiv.innerHTML = `
+            <img src="${movie.Poster}" alt="${movie.Title}">
+            <h3 class="titl">${movie.Title}</h3>
+            <p>${movie.Year}</p>
+            <p>${movie.Type}</p>
+          `;
+
+          list.appendChild(movieDiv);
+
+          const movieDetails = await fetchMovieDetails(movie.imdbID);
+
+          if (movieDetails.Ratings.length > 0) {
+            movieDetails.Ratings.forEach((ratObj) => {
+              let insertable = `
+                <div class="rating-slider-container">
+                
+                  <div class="rating-slider">
+                    <div class="rating-fill"></div>
+                  </div>
+                  <div class="rating-labels">
+                    <span>0</span><span class="rn">Rating</span><span>10</span>
+                  </div>
+                </div>`;
+
+              let rating = 0.0;
+              if (ratObj.Source === "Rotten Tomatoes") {
+                rating = P2F(ratObj.Value);
+              }else if (ratObj.Source === "Metacritic") {
+                rating = P2F(ratObj.Value);
+              }else {
+                rating = R2F(ratObj.Value);
+              }
+              if(rating > 11){
+                rating /= 10;
+              }
+
+              const ratingSlider = document.createElement('div');
+              ratingSlider.style.width = "100%";
+              ratingSlider.innerHTML = insertable;
+              movieDiv.appendChild(ratingSlider);
+
+              const ratingFill = ratingSlider.querySelector('.rating-fill');
+              const rn = ratingSlider.querySelector('.rn');
+              //const rt = ratingSlider.querySelector('.rt');
+              setTimeout(() => {
+                ratingFill.style.width = `${rating * 10}%`;
+                //rn.innerHTML = rating;
+                rn.innerHTML = ratObj.Source;
+              }, 10);
+            });
+          }
+
+          // Insert additional details after loading the individual movie's data
+          const movieDetailsDiv = document.createElement('div');
+          movieDetailsDiv.classList.add('movie-details');
+          movieDetailsDiv.innerHTML = `
+            <p><strong>Release Date:</strong> ${movieDetails.Released || "N/A"}</p>
+            <p><strong>Plot:</strong> ${movieDetails.Plot || "N/A"}</p>
+            <p><strong>Genre:</strong> ${movieDetails.Genre || "N/A"}</p>
+            <p><strong>Actors:</strong> ${movieDetails.Actors || "N/A"}</p>
+          `;
+          movieDiv.appendChild(movieDetailsDiv);
+
+          // Add an event listener for clicking the movie to toggle the movie details
+          movieDiv.addEventListener('click', () => {
+            movieDiv.classList.toggle('open');
+          });
+          movieDiv.querySelector(".titl").addEventListener('click', () => {
+            const searchUrl = 'https://www.imdb.com/title/' + movie.imdbID;
+            window.open(searchUrl, '_blank');
+          });
+        });
+      }
+
+      function R2F(rating) {
+        const parts = rating.split('/');
+        if (parts.length === 2) {
+          return parseFloat(parts[0]);
+        }
+        return 0;
+      }
+
+      function P2F(percentage) {
+        const number = parseFloat(percentage.replace('%', ''));
+        return number / 10;
+      }
+    </script>
+  </body>
+</html>
