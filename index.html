@@ -199,22 +199,13 @@ function extractYear(e) {
 }
 
 function getResult(e, t) {
-    let n = e.map(item => {
-        let processedItem = item.split(":")[0]; 
-        let cleanedItem = extractYear(processedItem).cleanedName; 
-
-        return {
-            item: item,
-            score: levenshteinDistance(cleanedItem, extractYear(t).cleanedName)
-        };
-    });
-
-    let a = n.reduce((bestIndex, current, index, array) =>
-        current.score < array[bestIndex].score ? index : bestIndex, 0);
-
-    return n[a].score < 10 ? a : null;
+	let n = e.map(e => ({
+			item: e,
+			score: levenshteinDistance(extractYear(e).cleanedName, extractYear(t).cleanedName)
+		})),
+		a = n.reduce((e, t, n, a) => t.score < a[e].score ? n : e, 0);
+	return n[a].score < 10 ? a : null
 }
-
 function levenshteinDistance(e, t) {
 	e = e.toLowerCase(), t = t.toLowerCase();
 	let [n, a] = e.length > t.length ? [t, e] : [e, t], r = Array(n.length + 1).fill(0).map((e, t) => t);
