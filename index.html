@@ -342,7 +342,7 @@
         step="1"
         id="yer"
         placeholder="Year of release"
-      /><br /><button id="searchBtn">Search</button>
+      /><br /><button id="searchBtn">Search</button><button id="searchBn">Direct Search</button>
     </div>
     <div id="listdet"></div>
     <div id="errors" style="color: red; display: inline"></div>
@@ -382,6 +382,13 @@
         currentType = "",
         currentYear = "",
         isFetching = !1;
+        document.getElementById("searchBn").onclick = function () {
+              if (document.getElementById("type").value != "game") {
+                serch(document.getElementById("search").value.trim(), "", "2008");
+              } else {
+                serchGame(document.getElementById("search").value.trim(), "", "2008");
+              }
+            }
       const mf = "https://pbzyn9plynywaowi.vercel.app/html?q=";
       async function searchMovies() {
         if (
@@ -536,7 +543,7 @@
         "Searching Itch.io...",
         "Searching FitGirl...",
         "Searching SteamRip...",
-        "",
+        "Searching DLXGames...",
       ];
       let qury,
         fmoviesSearchHeader = "ww4.fmovies.co/searching?limit=50&offset=0&q=",
@@ -550,10 +557,12 @@
         tsites = ["SFlix: ", "TodayTv: "],
         itchHeader = "itch.io/search?q=",
         itch = "https://itch.io",
-        oogHeader= "oceanofgames.com/?s=",
+        oogHeader = "oceanofgames.com/?s=",
         oog = "https://oceanofgames.com",
         fitgirl = "https://fitgirl-repacks.site",
         fitgirlheader = "fitgirl-repacks.site/?s=",
+        dlx = "https://dlxbgame.com",
+        dlxheader = "dlxbgame.com/?s=",
         steamrip = "https://steamrip.com",
         steamripheader = "steamrip.com/games-list-page";
 
@@ -577,9 +586,25 @@
           popupGame(true),
           setParagraph("imdb", "https://imdb.com/title/" + t, "View IMDB Page"),
           fetchItch(itchHeader + e);
-          fetchRip(steamripheader);
-          fetchOOG(oogHeader + (e.split(":").length > 1 ? e.split(":")[0] + e.split(":")[1] : e.split(":")[0]));
-          fetchFG(fitgirlheader + (e.split(":").length > 1 ? e.split(":")[0] + e.split(":")[1] : e.split(":")[0]));
+        fetchRip(steamripheader);
+        fetchOOG(
+          oogHeader +
+            (e.split(":").length > 1
+              ? e.split(":")[0] + e.split(":")[1]
+              : e.split(":")[0])
+        );
+        fetchFG(
+          fitgirlheader +
+            (e.split(":").length > 1
+              ? e.split(":")[0] + e.split(":")[1]
+              : e.split(":")[0])
+        );
+        fetchDLX(
+          dlxheader +
+            (e.split(":").length > 1
+              ? e.split(":")[0] + e.split(":")[1]
+              : e.split(":")[0])
+        );
         qury = e;
       }
       async function fetchHtml(e, t) {
@@ -595,6 +620,33 @@
           .then((e) => e.json())
           .then((e) => nextItch(parseHtml(e.body, "div", "", "game_title")));
       }
+      async function fetchRip(e) {
+        await fetch("https://madfetch.vercel.app/html/" + e)
+          .then((e) => e.json())
+          .then((e) => nextRip(parseHtml(e.body, "li", "", "az-list-item")));
+      }
+      async function fetchOOG(e) {
+        await fetch(mf + e)
+          .then((e) => e.json())
+          .then((e) => nextOOG(parseHtml(e.body, "h2", "", "title")));
+      }
+      async function fetchDLX(e) {
+        await fetch(mf + e)
+          .then((e) => e.json())
+          .then((e) => nextDLX(parseHtml(e.body, "h2", "", "post-title")));
+      }
+      async function fetchFG(e) {
+        await fetch(mf + e)
+          .then((e) => e.json())
+          .then((e) => nextFG(parseHtml(e.body, "h1", "", "entry-title")));
+      }
+
+
+      //////////////NEXT?/////////////////
+
+
+
+
       function nextItch(e) {
         let t = e;
         let n = [],
@@ -615,11 +667,6 @@
             )
           : setParagraph("justwatch", "#", "Unavailable on Itch.io");
       }
-      async function fetchRip(e) {
-        await fetch("https://madfetch.vercel.app/html/"+e)
-          .then((e) => e.json())
-          .then((e) => nextRip(parseHtml(e.body, "li", "", "az-list-item")));
-      }
       function nextRip(e) {
         let t = e;
         let n = [],
@@ -629,21 +676,16 @@
           return;
         }
         for (let r = 0; r < t.length; r++)
-          n.push(steamripheader+getProp(t[r], "a", "href")),
+          n.push(steamrip + getProp(t[r], "a", "href")),
             a.push(cleanSR(parseHtml(t[r], "a", "", "")[0])),
             //addSummaryLink(n[r], "SteamRip: " + a[r]);
-        null != getResult(a, qury)
-          ? setParagraph(
-              "hdtodaytv",
-              n[getResult(a, qury)],
-              "Download from SteamRip"
-            )
-          : setParagraph("hdtodaytv", "#", "Unavailable on Itch.io");
-      }
-      async function fetchOOG(e) {
-        await fetch(mf + e)
-          .then((e) => e.json())
-          .then((e) => nextOOG(parseHtml(e.body, "h2", "", "title")));
+            null != getResult(a, qury)
+              ? setParagraph(
+                  "hdtodaytv",
+                  n[getResult(a, qury)],
+                  "Download from SteamRip"
+                )
+              : setParagraph("hdtodaytv", "#", "Unavailable on Itch.io");
       }
       function nextOOG(e) {
         let t = e;
@@ -665,10 +707,21 @@
             )
           : setParagraph("fmovies", "#", "Unavailable on Ocean of Games");
       }
-      async function fetchFG(e) {
-        await fetch(mf + e)
-          .then((e) => e.json())
-          .then((e) => nextFG(parseHtml(e.body, "h1", "", "entry-title")));
+      function nextDLX(e) {
+        let t = e;
+        let n = [],
+          a = [];
+        if (0 == t.length) {
+          setParagraph("yts", "#", "Unavailable on DLXGames");
+          return;
+        }
+        for (let r = 0; r < t.length; r++)
+          n.push(getProp(t[r], "a", "href")),
+            a.push(removeXboxTerms(cleanSR(parseHtml(t[r], "a", "", "")[0]))),
+            addSummaryLink(n[r], "DLX: " + a[r]);
+        null != getResult(a, qury)
+          ? setParagraph("yts", n[getResult(a, qury)], "Download from DLXGames")
+          : setParagraph("yts", "#", "Unavailable on DLXGames");
       }
       function nextFG(e) {
         let t = e;
@@ -700,10 +753,11 @@
         r = r.replace(/[+-]/g, "").trim();
         return r;
       }
+
       function cleanSR(text) {
         const pattern = /\b(download|free|campaign|remastered|v[\d.]+)\b/gi;
         let r = text.replace(pattern, "").trim();
-        r = r.split("-")[0].split("+")[0].split("(")[0].trim();
+        r = r.split("-")[0].split("+")[0].split("(")[0].split("[")[0].trim();
         r = r.replace(pattern, "").trim();
         r = r.split("–")[0].split("+")[0].trim();
         r = r.replace(/[+-]/g, "").trim();
@@ -728,6 +782,9 @@
         await fetch(mf + e)
           .then((e) => e.json())
           .then((e) => nextJw(e.body));
+      }
+      function removeXboxTerms(text) {
+        return text.replace(/\b(xbox|360|one|1|jtag|rgh|dlc|edition)\b/gi, "").trim();
       }
       function nextJw(htmlContent) {
         let movieElements = parseHtml(
