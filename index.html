@@ -14,6 +14,9 @@
     <meta property=og:image
     content=https://www.shutterstock.com/image-vector/film-clapper-3d-cartoon-icon-600nw-2239181291.jpg>
     <style>
+      body {
+        overflow-x: none;
+      }
       .footer {
         text-align: center;
         font-size: 15px;
@@ -342,7 +345,8 @@
         step="1"
         id="yer"
         placeholder="Year of release"
-      /><br /><button id="searchBtn">Search</button><button id="searchBn">Direct Search</button>
+      /><br /><button id="searchBtn">Search</button
+      ><button id="searchBn">Direct Search</button>
     </div>
     <div id="listdet"></div>
     <div id="errors" style="color: red; display: inline"></div>
@@ -359,6 +363,7 @@
       <p id="sflix">Searching SFlix...</p>
       <p id="hdtodaytv">Searching HdTodayTv...</p>
       <p id="yts">Searching YTS...</p>
+      <p id="hanim">Searching HiAnime...</p>
       <details>
         <summary>Show all results</summary>
         <div id="summary-links"></div>
@@ -382,13 +387,13 @@
         currentType = "",
         currentYear = "",
         isFetching = !1;
-        document.getElementById("searchBn").onclick = function () {
-              if (document.getElementById("type").value != "game") {
-                serch(document.getElementById("search").value.trim(), "", "2008");
-              } else {
-                serchGame(document.getElementById("search").value.trim(), "", "2008");
-              }
-            }
+      document.getElementById("searchBn").onclick = function () {
+        if (document.getElementById("type").value != "game") {
+          serch(document.getElementById("search").value.trim(), "",document.getElementById("yer").value);
+        } else {
+          serchGame(document.getElementById("search").value.trim(), "", document.getElementById("yer").value);
+        }
+      };
       const mf = "https://pbzyn9plynywaowi.vercel.app/html?q=";
       async function searchMovies() {
         if (
@@ -528,6 +533,7 @@
         "sflix",
         "hdtodaytv",
         "yts",
+        "hanim",
       ];
       const paraphrase = [
         "View IMDB page",
@@ -536,6 +542,7 @@
         "Searching SFlix...",
         "Searching TodayTV...",
         "Searching YTS...",
+        "Searching HiAnime...",
       ];
       const paraphraseg = [
         "View IMDB Page",
@@ -544,6 +551,7 @@
         "Searching FitGirl...",
         "Searching SteamRip...",
         "Searching DLXGames...",
+        "",
       ];
       let qury,
         fmoviesSearchHeader = "ww4.fmovies.co/searching?limit=50&offset=0&q=",
@@ -565,9 +573,11 @@
         dlxheader = "dlxbgame.com/?s=",
         steamrip = "https://steamrip.com",
         steamripheader = "steamrip.com/games-list-page";
+      (hanim = "https://hianime.to"),
+        (hanimheader = "hianime.to/search?keyword=");
 
       function initserch() {
-        serch(document.getElementById("qry").value, "https://imdb.com", "2024");
+        serch(document.getElementById("qry").value, "https://imdb.com", document.getElementById("yer").value);
       }
 
       function serch(e, t, n) {
@@ -577,6 +587,7 @@
           fetchYts(ytsHeader[0] + e.split(":")[0] + ytsHeader[1]),
           fetchFmovies(fmoviesSearchHeader + e.split(":")[0]),
           fetchJustWatch(justwatchheader + e.split(":")[0]);
+        fetchHanime(hanimheader + e.split(":")[0], n);
         for (let a = 0; a < ssites.length; a++)
           fetchHtml(ssites[a] + e.split(":")[0], a);
         qury = e;
@@ -641,11 +652,7 @@
           .then((e) => nextFG(parseHtml(e.body, "h1", "", "entry-title")));
       }
 
-
       //////////////NEXT?/////////////////
-
-
-
 
       function nextItch(e) {
         let t = e;
@@ -783,8 +790,39 @@
           .then((e) => e.json())
           .then((e) => nextJw(e.body));
       }
+      async function fetchHanime(e, yer) {
+        e = e.replace(/%20/g, "+").replace(/ /g, "+");
+        if(yer != ""){
+          e += "&sy="+yer;
+        }
+        await fetch(mf + e)
+          .then((e) => e.json())
+          .then((e) => nextHanime(parseHtml(e.body, "h3", "", "film-name")));
+      }
+      function nextHanime(e) {
+        let t = e;
+        let n = [],
+          a = [];
+        if (0 == t.length) {
+          setParagraph("hanim", "#", "Unavailable on HiAnime");
+          return;
+        }
+        for (let r = 0; r < t.length; r++)
+          n.push(getProp(t[r], "a", "href")),
+            a.push(parseHtml(t[r], "a", "", "")[0]),
+            addSummaryLink(n[r], "HiAnime: " + a[r]);
+        null != getResult(a, qury)
+          ? setParagraph(
+              "hanim",
+              hanim + n[getResult(a, qury)],
+              "Watch on HiAnime"
+            )
+          : setParagraph("hanim", "#", "Unavailable on HiAnime");
+      }
       function removeXboxTerms(text) {
-        return text.replace(/\b(xbox|360|one|1|jtag|rgh|dlc|edition)\b/gi, "").trim();
+        return text
+          .replace(/\b(xbox|360|one|1|jtag|rgh|dlc|edition)\b/gi, "")
+          .trim();
       }
       function nextJw(htmlContent) {
         let movieElements = parseHtml(
